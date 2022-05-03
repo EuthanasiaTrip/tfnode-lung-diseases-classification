@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "@tensorflow/tfjs-node": "^3.15.0",
+    "@tensorflow/tfjs-node-gpu": "^3.16.0",
+    "jimp": "^0.16.1"
+  },
+  "scripts": {
+    "train": "node app.mjs"
+  }
+}
