@@ -1,71 +1,13 @@
-import fs from 'fs';
 import * as tf from '@tensorflow/tfjs-node-gpu';
-
-//const logger = require("./logger.js");
-
 import logger from './logger.js'
+import pkg from './dataLoader.js';
 
-const IMAGE_H = 200;
-const IMAGE_W = 200;
 const batchSize = 24;
-const trainEpochs = 15;
+const trainEpochs = 5;
 const validationSplit = 0.15;
-
-//const classes = ['covid', 'normal', 'tubic', 'pneumo']
-
-function getNumberByLabel(label, classes) {
-    let num = 0;
-    switch (label) {
-        case classes[0]:
-            num = 0;
-            break;
-        case classes[1]:
-            num = 1;
-            break;
-        case classes[2]:
-            num = 2; 
-            break;
-        case classes[3]:
-            num = 3;
-            break;
-    }
-    return num;
-}
-
-function getData(dataType) {
-    const dataFolder = `data/${dataType}`;
-    let data = [];
-    let classes = [];
-    let dataLabels = [];
-
-    fs.readdirSync(dataFolder).forEach(file => {
-        classes.push(file);
-    });
-
-    classes.forEach(label => {
-        const folder = dataFolder + '/' + label;
-        logger.log(`Resizing and preparing array of 3D tensors. Class: ${label}`);
-        fs.readdirSync(folder).forEach(img => {
-            let imageTensor = tf.node.decodeJpeg(fs.readFileSync(folder + '/' + img), 1);
-            data.push(
-                tf.image.resizeBilinear(imageTensor, [IMAGE_H, IMAGE_W])
-            );
-            imageTensor.dispose();
-            dataLabels.push(getNumberByLabel(label, classes));
-        });
-    });
-    logger.log("Stacking 3D tensors into 4D tensor...");
-    const images = tf.stack(data);
-    const labels = tf.oneHot(tf.tensor1d(dataLabels, 'int32'), classes.length).toFloat();
-
-
-    data.forEach(element =>
-        element.dispose()
-    );
-
-    logger.log(tf.memory(), false);
-    return { images, labels }
-}
+const loader = pkg.loader;
+const IMAGE_H = pkg.IMAGE_H;
+const IMAGE_W = pkg.IMAGE_W;
 
 function createModel() {
     const model = tf.sequential();
@@ -102,42 +44,35 @@ function createModel() {
 }
 
 
-//const trainData = getData("train");
-
-// trainData.labels.print((message, params) => {
-//     logger.log(message, false);
-// });
+const trainData = loader.getData("train");
 
 let model = createModel();
-model.summary((message) => {
-    logger.log(message, false);
+model.summary(90, [0.32, 0.61, 0.89, 1], (message) => 
+    logger.log(message, false)
+);
+
+
+await model.fit(trainData.images, trainData.labels, {
+    batchSize,
+    validationSplit,
+    epochs: trainEpochs,
+    callbacks: {
+        onEpochEnd: async (batch, logs) => {
+            logger.log(logs);
+        }
+    }
 });
 
-
-model.summary();
-
-// trainData.labels.print((message, params) => {
-//     logger.log(message, false);
-// });
+trainData.images.dispose();
+trainData.labels.dispose();
 
 
-// await model.fit(trainData.images, trainData.labels, {
-//     batchSize,
-//     validationSplit,
-//     epochs: trainEpochs,
-//     callbacks: {
-//         onBatchEnd: async (batch, logs) => {
-//             //logger.log(JSON.stringify(logs));
-//         }
-//     }
-// });
+const testData = loader.getData("test");
+const evalOutput = model.evaluate(testData.images, testData.labels);
+logger.log(
+    `Evaluation result:` +
+    `  Loss = ${evalOutput[0].dataSync()[0].toFixed(3)}; `+
+    `Accuracy = ${evalOutput[1].dataSync()[0].toFixed(3)}`);
 
-// trainData.images.dispose();
-// trainData.labels.dispose();
-
-// const testData = getData("test");
-// const evalOutput = model.evaluate(testData.images, testData.labels);
-// logger.log(
-//     `\nEvaluation result:\n` +
-//     `  Loss = ${evalOutput[0].dataSync()[0].toFixed(3)}; `+
-//     `Accuracy = ${evalOutput[1].dataSync()[0].toFixed(3)}`);
+const predictions = model.predict([testData.images, testData.labels]);
+const out = tf.math.confusionMatrix([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]], predictions, 4);

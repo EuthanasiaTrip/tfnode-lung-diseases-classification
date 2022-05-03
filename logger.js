@@ -40,7 +40,7 @@ class Logger {
     }
 
     log(msg, needFormat = true){        
-        const formattedMsg = needFormat ? this._formatMsg(msg) : msg;
+        const formattedMsg = needFormat ? this._formatMsg(JSON.stringify(msg)) : JSON.stringify(msg);
         console.log(formattedMsg);
         fs.appendFileSync(this.logFile, `\n${formattedMsg}`, err => {
             if(err){
