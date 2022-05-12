@@ -17,7 +17,7 @@ class DataLoader {
         fs.readdirSync(dataFolder).forEach(file => {
             classes.push(file);
         });
-    
+
         classes.forEach((label, index) => {
             const folder = dataFolder + '/' + label;
             logger.log(`Resizing and preparing array of 3D tensors. Class: ${label}`);
@@ -31,7 +31,7 @@ class DataLoader {
             });
         });
         logger.log("Stacking 3D tensors into 4D tensor...");
-        const images = tf.stack(data);
+        const images = tf.stack(data);        
         const labels = tf.oneHot(tf.tensor1d(dataLabels, 'int32'), classes.length).toFloat();
     
         data.forEach(element =>
