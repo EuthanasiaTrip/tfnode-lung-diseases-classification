@@ -2,9 +2,11 @@
   "dependencies": {
     "@tensorflow/tfjs-node": "^3.15.0",
     "@tensorflow/tfjs-node-gpu": "^3.16.0",
-    "jimp": "^0.16.1"
+    "jimp": "^0.16.1",
+    "ml-confusion-matrix": "^0.4.0"
   },
   "scripts": {
-    "train": "node app.mjs"
+    "train": "node train.mjs",
+    "evaluate": "node app.mjs"
   }
 }
