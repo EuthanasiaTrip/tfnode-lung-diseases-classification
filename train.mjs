@@ -1,9 +1,9 @@
 import * as tf from '@tensorflow/tfjs-node-gpu';
-import logger from './logger.js'
+import logger from './logger.js';
 import pkg from './dataLoader.js';
 
 const batchSize = 24;
-const trainEpochs = 1;
+const trainEpochs = 25;
 const loader = pkg.loader;
 const metrics = pkg.metricsHandler;
 const IMAGE_H = pkg.IMAGE_H;
@@ -20,22 +20,22 @@ function createModel() {
     model.add(tf.layers.maxPooling2d({ poolSize: [3, 3] }));
     model.add(tf.layers.conv2d({ kernelSize: [5, 5], filters: 64, activation: 'relu' }));
     model.add(tf.layers.maxPooling2d({ poolSize: [3, 3] }));
-    model.add(tf.layers.conv2d({ kernelSize: [3, 3], filters: 30, activation: 'relu' }));
+    model.add(tf.layers.conv2d({ kernelSize: [3, 3], filters: 32, activation: 'relu' }));
     model.add(tf.layers.maxPooling2d({ poolSize: [2, 2] }));
-    model.add(tf.layers.conv2d({ kernelSize: [3, 3], filters: 30, activation: 'relu' }));
+    model.add(tf.layers.conv2d({ kernelSize: [3, 3], filters: 16, activation: 'relu' }));
     model.add(tf.layers.maxPooling2d({ poolSize: [2, 2] }));
     model.add(tf.layers.flatten());
     model.add(tf.layers.dense({ units: 2048, activation: 'relu' }));
     model.add(tf.layers.dense({ units: 512, activation: 'relu' }));
-    model.add(tf.layers.dropout({ rate: 0.1 }));
+    model.add(tf.layers.dropout({ rate: 0.2 }));
     model.add(tf.layers.dense({ units: 256, activation: 'relu' }));
     model.add(tf.layers.dense({ units: 64, activation: 'relu' }));
-    model.add(tf.layers.dropout({ rate: 0.1 }));
+    model.add(tf.layers.dropout({ rate: 0.2 }));
     model.add(tf.layers.dense({ units: 32, activation: 'relu' }));
     model.add(tf.layers.dense({ units: 4, activation: 'softmax' }));
-
+    const optimizer = tf.train.adam(0.0001, 0.9, 0.999);
     model.compile({
-        optimizer: 'adam',
+        optimizer: optimizer,
         loss: 'categoricalCrossentropy',
         metrics: ['accuracy']
     });
@@ -69,7 +69,7 @@ trainData.labels.dispose();
 valData.images.dispose();
 valData.labels.dispose();
 
-const testData = loader.getData("test");
+const testData = loader.getData("test", false);
 const evalOutput = model.evaluate(testData.images, testData.labels);
 logger.log(
     `Evaluation result:` +

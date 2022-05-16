@@ -11,7 +11,7 @@ class DataHandler {
         this.dataLabels = [];
     }
 
-    getData(dataType) {        
+    getData(dataType, shuffle = true) {
         const dataFolder = `data/${dataType}`;
         let data = [];
         let classes = [];
@@ -33,6 +33,9 @@ class DataHandler {
                 this.dataLabels.push(index);
             });
         });
+        if (shuffle) {
+            tf.util.shuffleCombo(data, this.dataLabels);
+        }
         logger.log("Stacking 3D tensors into 4D tensor...");
         const images = tf.stack(data);
         const labels = tf.oneHot(tf.tensor1d(this.dataLabels, 'int32'), classes.length).toFloat();
@@ -49,7 +52,7 @@ class MetricsHandler {
         this.valAcc = [];
         this.valLoss = [];
         this.loss = [];
-        this.acc = [];        
+        this.acc = [];
 
         this.exportFile = 'results/Results ' + new Date().toISOString()
             .replace(/T/, ' ')
@@ -69,7 +72,10 @@ class MetricsHandler {
         this.predictions = predictions;
         const output = Array.from(predictions.argMax(1).dataSync());
         const CM = ConfusionMatrix.fromLabels(labels, output);
+        this.accuracy = CM.getAccuracy();
         this.confMatrix = CM.getMatrix();
+        this.falseCount = CM.getFalseCount();
+        this.trueCount = CM.getTrueCount();
     }
 
     exportToJSON() {
@@ -78,7 +84,10 @@ class MetricsHandler {
             val_loss: this.valLoss,
             loss: this.loss,
             acc: this.acc,
-            confMatrix: this.confMatrix
+            confMatrix: this.confMatrix,
+            accuracy: this.accuracy,
+            falseCount: this.falseCount,
+            trueCount: this.trueCount,
         }
         fs.writeFileSync(this.exportFile, JSON.stringify(metrics));
     }
