@@ -53,12 +53,20 @@ class MetricsHandler {
         this.valLoss = [];
         this.loss = [];
         this.acc = [];
+        this.exportFolder = './results';
+        this._setFolder();
 
-        this.exportFile = 'results/Results ' + new Date().toISOString()
+        this.exportFile = this.exportFolder + '/Results ' + new Date().toISOString()
             .replace(/T/, ' ')
             .replace(/\..+/, '')
             .replace(':', '-')
             .replace(':', '-') + ".json";
+    }
+
+    _setFolder(){
+        if(!fs.existsSync(this.exportFolder)){
+            fs.mkdirSync(this.exportFolder);
+        }
     }
 
     addEpochLogs(logs) {
